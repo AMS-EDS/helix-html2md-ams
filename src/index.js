@@ -9,9 +9,13 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import zlib from 'zlib';
+import { promisify } from 'util';
 import wrap from '@adobe/helix-shared-wrap';
 import { helixStatus } from '@adobe/helix-status';
 import bodyData from '@adobe/helix-shared-body-data';
+import { toSISize } from '@adobe/helix-shared-string';
+import { ConstraintsError, TooManyImagesError, html2md } from '@adobe/helix-html2md';
 import {
   Response,
   h1NoCache,
@@ -19,13 +23,17 @@ import {
   AbortError,
 } from '@adobe/fetch';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
-import { MediaHandler } from '@adobe/helix-mediahandler';
+import { MediaHandler, SizeTooLargeException } from '@adobe/helix-mediahandler';
 import pkgJson from './package.cjs';
-import { ConstraintsError, html2md } from './html2md.js';
-import { TooManyImagesError } from './mdast-process-images.js';
 
 /* c8 ignore next 7 */
 export const { fetch } = h1NoCache();
+
+const gzip = promisify(zlib.gzip);
+
+const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
+
+const DEFAULT_MAX_HTML_SIZE = 1024 * 1024; // 1mb
 
 /**
  * Generates an error response
@@ -101,6 +109,7 @@ async function run(request, ctx) {
   const { log } = ctx;
   const {
     sourceUrl, site, org, contentBusId,
+    mediaBucket,
   } = ctx.data;
   ctx.attributes = {};
 
@@ -135,10 +144,12 @@ async function run(request, ctx) {
       if (status >= 400 && status < 500) {
         switch (status) {
           case 401:
-            return error(ctx, `resource not found: ${sourceUrl}`, status);
+            return error(ctx, `not authenticated to access resource: ${sourceUrl}`, status);
           case 403:
+            // return a 404 so that for a html2md overlay we fallback to the primary content source
+            return error(ctx, `not authorized to access resource: ${sourceUrl}`, 404);
           case 404:
-            return error(ctx, `resource not found: ${sourceUrl}`, 404);
+            return error(ctx, `resource not found: ${sourceUrl}`, status);
           default:
             return error(ctx, `error fetching resource at ${sourceUrl}`, status);
         }
@@ -147,9 +158,13 @@ async function run(request, ctx) {
         return error(ctx, `error fetching resource at ${sourceUrl}: ${status}`, 502, 'warn');
       }
     }
+    const maxHTMLSize = ctx.data.limits?.maxHTMLSize
+      ? parseInt(ctx.data.limits.maxHTMLSize, 10)
+      : DEFAULT_MAX_HTML_SIZE;
+
     // limit response size of content provider to 1mb
-    if (html.length > 1024 * 1024) {
-      return error(ctx, `error fetching resource at ${sourceUrl}: html source larger than 1mb`, 409);
+    if (html.length > maxHTMLSize) {
+      return error(ctx, `error fetching resource at ${sourceUrl}: html source larger than ${toSISize(maxHTMLSize, 0)}`, 409);
     }
   } catch (e) {
     if (e instanceof AbortError) {
@@ -178,6 +193,7 @@ async function run(request, ctx) {
       r2AccountId,
       r2AccessKeyId,
       r2SecretAccessKey,
+      bucketId: mediaBucket,
       owner: org,
       repo: site,
       ref: 'main',
@@ -189,6 +205,9 @@ async function run(request, ctx) {
       noCache,
       fetchTimeout: 5000, // limit image fetches to 5s
       forceHttp1: true,
+      maxSize: ctx.data.limits?.maxImageSize
+        ? parseInt(ctx.data.limits.maxImageSize, 10)
+        : DEFAULT_MAX_IMAGE_SIZE,
     });
   }
 
@@ -200,13 +219,18 @@ async function run(request, ctx) {
       org,
       site,
       unspreadLists: !!ctx.data.features?.unspreadLists,
+      externalImageUrlPrefixes: ctx.data.features?.externalImageUrlPrefixes,
+      maxImages: ctx.data.limits?.maxImages,
+      maxMetadataSize: ctx.data.limits?.maxMetadataSize,
     });
 
+    const zipped = await gzip(md);
     const headers = {
       'content-type': 'text/markdown; charset=utf-8',
       'content-length': md.length,
       'cache-control': 'no-store, private, must-revalidate',
       'x-source-location': cleanupHeaderValue(sourceUrl),
+      'content-encoding': 'gzip',
     };
 
     const lastMod = res.headers.get('last-modified');
@@ -214,7 +238,7 @@ async function run(request, ctx) {
       headers['last-modified'] = lastMod;
     }
 
-    return new Response(md, {
+    return new Response(zipped, {
       status: 200,
       headers,
     });
@@ -224,6 +248,9 @@ async function run(request, ctx) {
     }
     if (e instanceof ConstraintsError) {
       return error(ctx, `error fetching resource at ${sourceUrl}: ${e.message}`, 400);
+    }
+    if (e instanceof SizeTooLargeException) {
+      return error(ctx, `error fetching resource at ${sourceUrl}: ${e.message}`, 409);
     }
     /* c8 ignore next 3 */
     log.debug(e.stack);

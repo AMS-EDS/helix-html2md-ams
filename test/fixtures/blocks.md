@@ -1,11 +1,11 @@
 +--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Columns (bleed)                                                                                                                                                                                                    |
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------+
-| _Helix is a new and exciting feature of Adobe Experience Manager_                                                                                                                                    | ![][image0] |
+| *Helix is a new and exciting feature of Adobe Experience Manager*                                                                                                                                    | ![][image0] |
 |                                                                                                                                                                                                      |             |
 | # Faster. Better. Period.                                                                                                                                                                            |             |
 |                                                                                                                                                                                                      |             |
-| AEM Helix is the fastest way to **_launch_** new sites and deliver the **_fastest pages_** on the web, as a bonus it is also the most intuitive and fastest way to **_create and publish_** content. |             |
+| AEM Helix is the fastest way to ***launch*** new sites and deliver the ***fastest pages*** on the web, as a bonus it is also the most intuitive and fastest way to ***create and publish*** content. |             |
 |                                                                                                                                                                                                      |             |
 | [Seriously? Yes.](#but-how-fast)                                                                                                                                                                     |             |
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------+
@@ -131,7 +131,7 @@
 
 ---
 
-### What _is_ Helix? (if you like tech jargon)
+### What *is* Helix? (if you like tech jargon)
 
 Helix lets business users ingest and publish markdown documents and spreadsheets from Microsoft Office or Google Docs and Sheets into a scalable, distributed content repository and dynamically renders HTML (and JSON, webp, etc.) to produce fast websites and actively manages cache consistency with your existing CDN infrastructure.
 
@@ -155,23 +155,39 @@ Helix lets frontend devs develop and deploy the design and functionality of thei
 | Style   | highlight |
 +---------+-----------+
 
-+------------------------------------------------------------------------+
-| Metadata                                                               |
-+---------------+--------------------------------------------------------+
-| title         | Project Helix by Adobe                                 |
-+---------------+--------------------------------------------------------+
-| description   | Frictionless experience management: Build blazing fast |
-|               | websites using tools content creators and developers   |
-|               | already know.                                          |
-+---------------+--------------------------------------------------------+
-| og:image      | ![][image8]                                            |
-+---------------+--------------------------------------------------------+
-| twitter:card  | summary\_large\_image                                  |
-+---------------+--------------------------------------------------------+
-| twitter:image | ![][image8]                                            |
-+---------------+--------------------------------------------------------+
-| robots        | noindex, nofollow                                      |
-+---------------+--------------------------------------------------------+
++-------------------------------------------------------------------------------+
+| Metadata                                                                      |
++----------------------+--------------------------------------------------------+
+| title                | Project Helix by Adobe                                 |
++----------------------+--------------------------------------------------------+
+| description          | Frictionless experience management: Build blazing fast |
+|                      | websites using tools content creators and developers   |
+|                      | already know.                                          |
++----------------------+--------------------------------------------------------+
+| og:title             | Project Helix by Adobe                                 |
++----------------------+--------------------------------------------------------+
+| og:description       | Frictionless experience management: Build blazing fast |
+|                      | websites using tools content creators and developers   |
+|                      | already know.                                          |
++----------------------+--------------------------------------------------------+
+| og:url               | https\://www\.hlx.live/home                            |
++----------------------+--------------------------------------------------------+
+| og:image             | ![][image8]                                            |
++----------------------+--------------------------------------------------------+
+| og:image:secure\_url | ![][image8]                                            |
++----------------------+--------------------------------------------------------+
+| twitter:card         | summary\_large\_image                                  |
++----------------------+--------------------------------------------------------+
+| twitter:title        | Project Helix by Adobe                                 |
++----------------------+--------------------------------------------------------+
+| twitter:description  | Frictionless experience management: Build blazing fast |
+|                      | websites using tools content creators and developers   |
+|                      | already know.                                          |
++----------------------+--------------------------------------------------------+
+| twitter:image        | ![][image8]                                            |
++----------------------+--------------------------------------------------------+
+| robots               | noindex, nofollow                                      |
++----------------------+--------------------------------------------------------+
 
 [image0]: ./media_11150c400cabf67c6baeb1d92d2adf99ab8941fb7.png?width=750&format=png&optimize=medium
 

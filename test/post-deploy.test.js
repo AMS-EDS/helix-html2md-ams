@@ -22,21 +22,33 @@ Content is: sharepoint-/main/index.docx
 
 And more...newcontent
 
-+-------------------------------------------------------------+
-| Metadata                                                    |
-+-------------------+-----------------------------------------+
-| title             | Helix Test Content                      |
-+-------------------+-----------------------------------------+
-| description       | Content is: sharepoint-/main/index.docx |
-+-------------------+-----------------------------------------+
-| og:image          | ![][image0]                             |
-+-------------------+-----------------------------------------+
-| twitter:card      | summary\\_large\\_image                   |
-+-------------------+-----------------------------------------+
-| twitter:image     | ![][image0]                             |
-+-------------------+-----------------------------------------+
-| serp-content-type | overlay                                 |
-+-------------------+-----------------------------------------+
++----------------------------------------------------------------+
+| Metadata                                                       |
++----------------------+-----------------------------------------+
+| title                | Helix Test Content                      |
++----------------------+-----------------------------------------+
+| description          | Content is: sharepoint-/main/index.docx |
++----------------------+-----------------------------------------+
+| og:title             | Helix Test Content                      |
++----------------------+-----------------------------------------+
+| og:description       | Content is: sharepoint-/main/index.docx |
++----------------------+-----------------------------------------+
+| og:url               | https\\://www\\.example.com/              |
++----------------------+-----------------------------------------+
+| og:image             | ![][image0]                             |
++----------------------+-----------------------------------------+
+| og:image:secure\\_url | ![][image0]                             |
++----------------------+-----------------------------------------+
+| twitter:card         | summary\\_large\\_image                   |
++----------------------+-----------------------------------------+
+| twitter:title        | Helix Test Content                      |
++----------------------+-----------------------------------------+
+| twitter:description  | Content is: sharepoint-/main/index.docx |
++----------------------+-----------------------------------------+
+| twitter:image        | ![][image0]                             |
++----------------------+-----------------------------------------+
+| serp-content-type    | overlay                                 |
++----------------------+-----------------------------------------+
 
 [image0]: about:error
 `;
@@ -52,7 +64,7 @@ createTargets({ _version: 'ci' }).forEach((target) => {
 
     it('converts html from the helix site', async () => {
       const url = new URL(`${target.host()}${target.urlPath()}`);
-      url.searchParams.append('sourceUrl', 'https://main--helix-test-content-onedrive--adobe.hlx.page');
+      url.searchParams.append('sourceUrl', 'https://main--helix-test-content-onedrive--adobe.aem.page');
       url.searchParams.append('org', 'tripodsan');
       url.searchParams.append('site', 'helix-test-content-html');
       url.searchParams.append('contentBusId', '9fec4a532ea34cd9cd4900e9a7955b502ad83b3cc4b5f123ea7711b5305');

@@ -16,7 +16,7 @@ import assert from 'assert';
 import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
-import { Nock } from './utils.js';
+import { Nock, uncompress } from './utils.js';
 
 function reqUrl(path = '/', init = {}) {
   const url = new URL('https://localhost');
@@ -29,7 +29,8 @@ function reqUrl(path = '/', init = {}) {
 
 const DUMMY_ENV = {
   MEDIAHANDLER_NOCACHHE: true,
-  AWS_REGION: 'dummy',
+  AWS_PROFILE: 'dummy',
+  AWS_REGION: 'us-easy-1',
   AWS_ACCESS_KEY_ID: 'dummy',
   AWS_SECRET_ACCESS_KEY: 'dummy',
   CLOUDFLARE_ACCOUNT_ID: 'dummy',
@@ -41,6 +42,7 @@ describe('Index Tests', () => {
   let nock;
   beforeEach(() => {
     nock = new Nock().env();
+    delete process.env.AWS_PROFILE;
     Object.assign(process.env, {
       AWS_S3_REGION: 'us-east-1',
       AWS_S3_ACCESS_KEY_ID: 'dummy',
@@ -107,6 +109,10 @@ describe('Index Tests', () => {
           .get('/blog/relative.png')
           .replyWithFile(200, testImagePath, {
             'content-type': 'image/png',
+          })
+          .get('/adobe/assets/urn:aaid:aem:abcd')
+          .replyWithFile(200, testImagePath, {
+            'content-type': 'image/png',
           });
         nock('https://images.dummy.com', { reqheaders })
           .get('/300.png')
@@ -115,19 +121,22 @@ describe('Index Tests', () => {
           });
         nock('https://helix-media-bus.s3.us-east-1.amazonaws.com')
           .head('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
-          .times(4)
+          .times(5)
           .reply(404)
           .put('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227?x-id=PutObject')
-          .times(4)
+          .times(5)
           .reply(201);
 
         const expected = await readFile(resolve(__testdir, 'fixtures', 'images.md'), 'utf-8');
         const result = await main(reqUrl('/blog/article', { headers }), { log: console, env: DUMMY_ENV });
         assert.strictEqual(result.status, 200);
-        assert.strictEqual((await result.text()).trim(), expected.trim());
+
+        const uncompressed = await uncompress(result);
+        assert.strictEqual(uncompressed, expected.trim());
         assert.deepStrictEqual(result.headers.plain(), {
           'cache-control': 'no-store, private, must-revalidate',
-          'content-length': '824',
+          'content-encoding': 'gzip',
+          'content-length': '837',
           'content-type': 'text/markdown; charset=utf-8',
           'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
           'x-source-location': 'https://www.example.com/blog/article',
@@ -168,6 +177,11 @@ describe('Index Tests', () => {
           .get('/blog/relative.png')
           .replyWithFile(200, testImagePath, {
             'content-type': 'image/png',
+          })
+          .get('/adobe/assets/urn:aaid:aem:abcd')
+          .basicAuth({ user: 'john', pass: 'doe' })
+          .replyWithFile(200, testImagePath, {
+            'content-type': 'image/png',
           });
         nock('https://images.dummy.com', { badheaders: ['authorization'] })
           .get('/300.png')
@@ -176,19 +190,22 @@ describe('Index Tests', () => {
           });
         nock('https://helix-media-bus.s3.us-east-1.amazonaws.com')
           .head('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
-          .times(4)
+          .times(5)
           .reply(404)
           .put('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227?x-id=PutObject')
-          .times(4)
+          .times(5)
           .reply(201);
 
         const expected = await readFile(resolve(__testdir, 'fixtures', 'images.md'), 'utf-8');
         const result = await main(reqUrl('/blog/article', { headers }), { log: console, env: DUMMY_ENV });
         assert.strictEqual(result.status, 200);
-        assert.strictEqual((await result.text()).trim(), expected.trim());
+
+        const uncompressed = await uncompress(result);
+        assert.strictEqual(uncompressed, expected.trim());
         assert.deepStrictEqual(result.headers.plain(), {
           'cache-control': 'no-store, private, must-revalidate',
-          'content-length': '824',
+          'content-encoding': 'gzip',
+          'content-length': '837',
           'content-type': 'text/markdown; charset=utf-8',
           'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
           'x-source-location': 'https://www.example.com/blog/article',
@@ -222,9 +239,12 @@ describe('Index Tests', () => {
       },
     );
     assert.strictEqual(result.status, 200);
-    assert.strictEqual((await result.text()).trim(), expected.trim());
+
+    const uncompressed = await uncompress(result);
+    assert.strictEqual(uncompressed, expected.trim());
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
       'content-length': '157',
       'content-type': 'text/markdown; charset=utf-8',
       'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
@@ -233,10 +253,10 @@ describe('Index Tests', () => {
   });
 
   for (const status of [
-    { origin: 400, expected: 400 },
-    { origin: 401, expected: 401 },
-    { origin: 403, expected: 404 },
-    { origin: 404, expected: 404 },
+    { origin: 400, expected: 400, message: 'error fetching resource at https://www.example.com/' },
+    { origin: 401, expected: 401, message: 'not authenticated to access resource: https://www.example.com/' },
+    { origin: 403, expected: 404, message: 'not authorized to access resource: https://www.example.com/' },
+    { origin: 404, expected: 404, message: 'resource not found: https://www.example.com/' },
   ]) {
     // eslint-disable-next-line no-loop-func
     it(`returns ${status.origin} for a ${status.expected} response`, async () => {
@@ -248,10 +268,7 @@ describe('Index Tests', () => {
       assert.deepStrictEqual(result.headers.plain(), {
         'cache-control': 'no-store, private, must-revalidate',
         'content-type': 'text/plain; charset=utf-8',
-        'x-error':
-          status.expected === 400
-            ? 'error fetching resource at https://www.example.com/'
-            : 'resource not found: https://www.example.com/',
+        'x-error': status.message,
       });
     });
   }
@@ -292,9 +309,12 @@ describe('Index Tests', () => {
       },
     );
     assert.strictEqual(result.status, 200);
-    assert.strictEqual((await result.text()).trim(), expected.trim());
+
+    const uncompressed = await uncompress(result);
+    assert.strictEqual(uncompressed, expected.trim());
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
       'content-length': '406',
       'content-type': 'text/markdown; charset=utf-8',
       'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
@@ -355,6 +375,207 @@ describe('Index Tests', () => {
     });
   });
 
+  it('honors maxImages limit', async () => {
+    nock('https://www.example.com')
+      .get(/\/image-\d+\.png/)
+      .times(250)
+      .replyWithFile(200, resolve(__testdir, 'fixtures', '300.png'), {
+        'content-type': 'image/png',
+      });
+
+    nock('https://helix-media-bus.s3.us-east-1.amazonaws.com')
+      .head('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
+      .times(250)
+      .reply(404)
+      .put('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227?x-id=PutObject')
+      .times(250)
+      .reply(201);
+
+    let html = '<html><body><main><div>';
+    for (let i = 0; i < 250; i += 1) {
+      html += `<img src="/image-${i}.png">`;
+    }
+    html += '</div></main></body>';
+
+    nock('https://www.example.com')
+      .get('/')
+      .reply(200, html);
+
+    const result = await main(
+      new Request('https://www.example.com/', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer 1234',
+          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          org: 'owner',
+          site: 'repo',
+          sourceUrl: 'https://www.example.com/',
+          contentBusId: 'foo-id',
+          limits: {
+            maxImages: 250,
+          },
+        }),
+      }),
+      {
+        log: console,
+        env: DUMMY_ENV,
+      },
+    );
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
+      'content-length': '2870',
+      'content-type': 'text/markdown; charset=utf-8',
+      'x-source-location': 'https://www.example.com/',
+    });
+  });
+
+  it('return 409 for large image', async () => {
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'image-large.html'), {})
+      .get('/large.png')
+      .reply(200, Buffer.alloc(21 * 1025 * 1024), {
+        'content-type': 'image/png',
+        'content-length': 21 * 1024 * 1240,
+      });
+
+    const result = await main(
+      new Request('https://www.example.com/', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer 1234',
+          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          org: 'owner',
+          site: 'repo',
+          sourceUrl: 'https://www.example.com/',
+          contentBusId: 'foo-id',
+        }),
+      }),
+      {
+        log: console,
+        env: DUMMY_ENV,
+      },
+    );
+    assert.strictEqual(result.status, 409);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'error fetching resource at https://www.example.com/: Image 1 exceeds allowed limit of 20.00MB',
+    });
+  });
+
+  it('return 409 for several large images', async () => {
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'images-large.html'), {})
+      .get('/large.png')
+      .reply(200, Buffer.alloc(25 * 1025 * 1024), {
+        'content-type': 'image/png',
+        'content-length': 25 * 1024 * 1240,
+      })
+      .get('/large1.png')
+      .reply(200, Buffer.alloc(24 * 1025 * 1024), {
+        'content-type': 'image/png',
+        'content-length': 24 * 1024 * 1240,
+      });
+
+    const result = await main(
+      new Request('https://www.example.com/', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer 1234',
+          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          org: 'owner',
+          site: 'repo',
+          sourceUrl: 'https://www.example.com/',
+          contentBusId: 'foo-id',
+        }),
+      }),
+      {
+        log: console,
+        env: DUMMY_ENV,
+      },
+    );
+    assert.strictEqual(result.status, 409);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'error fetching resource at https://www.example.com/: Images 1 and 2 exceed allowed limit of 20.00MB',
+    });
+  });
+
+  it('honors maxImageSize limit', async () => {
+    nock('https://my-media-bus.s3.us-east-1.amazonaws.com')
+      .head('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3')
+      .reply(404)
+      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=1&x-id=UploadPart')
+      .reply(201)
+      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=2&x-id=UploadPart')
+      .reply(201)
+      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=3&x-id=UploadPart')
+      .reply(201)
+      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=4&x-id=UploadPart')
+      .reply(201)
+      .post('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?uploads=')
+      .reply(201);
+
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'image-large.html'), {})
+      .get('/large.png')
+      .reply(200, Buffer.alloc(25 * 1024 * 1024), {
+        'content-type': 'image/png',
+        'content-length': 25 * 1024 * 1240,
+      });
+
+    const result = await main(
+      new Request('https://www.example.com/', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer 1234',
+          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          org: 'owner',
+          site: 'repo',
+          sourceUrl: 'https://www.example.com/',
+          contentBusId: 'foo-id',
+          limits: {
+            maxImageSize: 30 * 1024 * 1024, // 30mb
+          },
+          mediaBucket: 'my-media-bus',
+        }),
+      }),
+      {
+        log: console,
+        env: DUMMY_ENV,
+      },
+    );
+    const expected = await readFile(resolve(__testdir, 'fixtures', 'image-large.md'), 'utf-8');
+    const uncompressed = await uncompress(result);
+    assert.strictEqual(result.status, 200);
+    assert.strictEqual(uncompressed, expected.trim());
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
+      'content-length': '345',
+      'content-type': 'text/markdown; charset=utf-8',
+      'x-source-location': 'https://www.example.com/',
+    });
+  });
+
   it('returns 409 for a large html', async () => {
     nock('https://www.example.com')
       .get('/')
@@ -366,7 +587,46 @@ describe('Index Tests', () => {
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'error fetching resource at https://www.example.com/: html source larger than 1mb',
+      'x-error': 'error fetching resource at https://www.example.com/: html source larger than 1MB',
+    });
+  });
+
+  it('honors max html limit large html', async () => {
+    nock('https://www.example.com')
+      .get('/')
+      .reply(200, 'x'.repeat(1024 ** 2 + 1));
+
+    const result = await main(
+      new Request('https://www.example.com/', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer 1234',
+          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          org: 'owner',
+          site: 'repo',
+          sourceUrl: 'https://www.example.com/',
+          contentBusId: 'foo-id',
+          limits: {
+            maxHTMLSize: 2 * 1024 * 1024, // 2mb
+          },
+        }),
+      }),
+      {
+        log: console,
+        env: DUMMY_ENV,
+      },
+    );
+
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
+      'content-length': '0',
+      'content-type': 'text/markdown; charset=utf-8',
+      'x-source-location': 'https://www.example.com/',
     });
   });
 
