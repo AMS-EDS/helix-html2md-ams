@@ -12,6 +12,19 @@
 // eslint-disable-next-line no-console
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+// // loading local vars from .env file
+// dotenv.config();
+
+// export const {
+//     AWS_PROFILE,
+//     AWS_REGION,
+//     HELIX_BUCKET_SUFFIX
+// } = process.env;
+
+// export const MEDIA_BUS_BUCKET = process.env.MEDIA_BUS_BUCKET ||=
+//   `helix-media-bus-${HELIX_BUCKET_SUFFIX}`;
+// export const S3_MEDIA_BUCKET =
+//   `https://${MEDIA_BUS_BUCKET}.s3.${AWS_REGION}.amazonaws.com`;
 
 // eslint-disable-next-line no-console
 console.log('Forcing HTTP/1.1 for @adobe/fetch');
@@ -25,3 +38,21 @@ process.env.HELIX_MEDIA_HANDLER_DISABLE_R2 = 'true';
 global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..');
 // eslint-disable-next-line no-underscore-dangle
 global.__testdir = resolve(fileURLToPath(import.meta.url), '..');
+
+// provide verbose for test logger
+// eslint-disable-next-line no-console
+console.verbose = console.debug;
+
+// bypass error with mocha-suppress-logs
+// see https://github.com/AleG94/mocha-suppress-logs/issues/12
+export const mochaHooks = {
+  afterEach() {
+    if (this._runnable?.ctx?.currentTest?.intellij_test_node) {
+      process.stdout.write('');
+    }
+  },
+};
+
+global.fetch = () => {
+  throw Error('unsupported use of global fetch.');
+};

@@ -1,0 +1,9 @@
+{
+  "ignorePatterns": {
+    "brokenTemplateLiterals": []
+  },
+  "skipTests": {
+    "bucketValidation": true
+  },
+  "description": "Build validation configuration - patterns to ignore and tests to skip"
+}

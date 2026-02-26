@@ -7,25 +7,28 @@
   "type": "module",
   "scripts": {
     "start": "nodemon",
-    "test": "c8 mocha -i -g 'Post-Deploy' --spec=test/**/*.test.js",
-    "test-postdeploy": "mocha -g 'Post-Deploy' --spec=test/**/*.test.js",
+    "test": "c8 mocha -i -g 'Post-Deploy' --ignore=test/build-validation.test.js --spec test/*.test.js",
+    "test-postdeploy": "mocha -g 'Post-Deploy' --spec test/*.test.js",
+    "test:build": "npm run build && mocha --spec=test/build-validation.test.js",
     "lint": "eslint .",
     "semantic-release": "semantic-release",
-    "semantic-release-dry": "semantic-release --dry-run --branches $CI_BRANCH",
-    "build": "hedy -v",
-    "deploy": "hedy -v --deploy --test --cleanup-patch=1w",
+    "build": "node build.js --test-bundle",
+    "deploy": "node build.js --deploy --test --cleanup-patch=1y -l major",
+    "deploy-test": "hedy -v --deploy --test --pkgVersion=test",
     "deploy-routes": "hedy --no-build --no-hints -l major",
-    "deploy-ci": "hedy -v --deploy --test --pkgVersion=ci$CI_BUILD_NUM -l ci --cleanup-ci 24h",
-    "prepare": "husky"
+    "deploy-ci": "hedy -v --deploy --test --pkgVersion=ci$CIRCLE_BUILD_NUM -l ci --cleanup-ci=24h",
+    "postinstall": "patch-package"
   },
   "wsk": {
+    "namespace": "helix",
     "target": "aws",
     "name": "helix3/html2md@${version}",
-    "testUrl": "/_status_check/healthcheck.json",
-    "memory": 1024,
-    "awsRole!important": "arn:aws:iam::118435662149:role/helix-service-role-s3-rw",
+    "memory": "2048",
+    "awsRole": "arn:${process.env.AWS_PARTITION}:iam::${process.env.AWS_ACCOUNT_ID}:role/${process.env.HLX_AWS_ROLE_NAME}",
+    "awsRegion": "${process.env.AWS_REGION}",
     "awsAttachAuthorizer": "helix-token-authorizer_v2",
     "fastlyServiceId!important": "",
+    "testUrl": "/_status_check/healthcheck.json",
     "nodeVersion": 22
   },
   "mocha": {
