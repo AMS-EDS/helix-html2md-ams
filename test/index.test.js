@@ -17,6 +17,7 @@ import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
 import { Nock, uncompress } from './utils.js';
+import { HELIX_BUCKET_SUFFIX } from './setup-env.js';
 
 function reqUrl(path = '/', init = {}) {
   const url = new URL('https://localhost');
@@ -36,6 +37,7 @@ const DUMMY_ENV = {
   CLOUDFLARE_ACCOUNT_ID: 'dummy',
   CLOUDFLARE_R2_ACCESS_KEY_ID: 'dummy',
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'dummy',
+  HELIX_MEDIA_HANDLER_DISABLE_R2: 'true',
 };
 
 describe('Index Tests', () => {
@@ -47,6 +49,7 @@ describe('Index Tests', () => {
       AWS_S3_REGION: 'us-east-1',
       AWS_S3_ACCESS_KEY_ID: 'dummy',
       AWS_S3_SECRET_ACCESS_KEY: 'dummy',
+      HELIX_MEDIA_HANDLER_DISABLE_R2: 'true',
     });
   });
 
@@ -119,7 +122,7 @@ describe('Index Tests', () => {
           .replyWithFile(200, testImagePath, {
             'content-type': 'image/png',
           });
-        nock('https://helix-media-bus.s3.us-east-1.amazonaws.com')
+        nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.us-east-1.amazonaws.com`)
           .head('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
           .times(5)
           .reply(404)
@@ -188,7 +191,7 @@ describe('Index Tests', () => {
           .replyWithFile(200, testImagePath, {
             'content-type': 'image/png',
           });
-        nock('https://helix-media-bus.s3.us-east-1.amazonaws.com')
+        nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.us-east-1.amazonaws.com`)
           .head('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
           .times(5)
           .reply(404)
@@ -383,7 +386,7 @@ describe('Index Tests', () => {
         'content-type': 'image/png',
       });
 
-    nock('https://helix-media-bus.s3.us-east-1.amazonaws.com')
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.us-east-1.amazonaws.com`)
       .head('/foo-id/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
       .times(250)
       .reply(404)

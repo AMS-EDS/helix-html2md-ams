@@ -1,0 +1,6 @@
+{
+  "ignorePatterns": {
+    "brokenTemplateLiterals": []
+  },
+  "description": "Build validation configuration - patterns to ignore during validation"
+}

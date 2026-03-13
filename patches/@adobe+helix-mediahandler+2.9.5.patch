@@ -1,0 +1,29 @@
+diff --git a/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js b/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js
+index dda8ca3..1fdab7a 100644
+--- a/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js
++++ b/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js
+@@ -53,13 +53,13 @@ export default class MediaHandler {
+    */
+   constructor(opts = {}) {
+     Object.assign(this, {
+-      _awsRegion: opts.awsRegion = 'us-east-1',
++      _awsRegion: opts.awsRegion || process.env.AWS_REGION || 'us-east-1',
+       _awsAccessKeyId: opts.awsAccessKeyId,
+       _awsSecretAccessKey: opts.awsSecretAccessKey,
+       _r2AccountId: opts.r2AccountId,
+       _r2AccessKeyId: opts.r2AccessKeyId,
+       _r2SecretAccessKey: opts.r2SecretAccessKey,
+-      _bucketId: opts.bucketId || 'helix-media-bus',
++      _bucketId: opts.bucketId || 'helix-media-bus-' + (process.env.HELIX_BUCKET_SUFFIX || ''),
+       _contentBusId: opts.contentBusId,
+       _owner: opts.owner,
+       _repo: opts.repo,
+@@ -799,7 +799,7 @@ export default class MediaHandler {
+     if (blob.meta && blob.meta.width && blob.meta.height && !blob.contentType?.match(/^video\/[^/]+$/)) {
+       fragment = `#width=${blob.meta.width}&height=${blob.meta.height}`;
+     }
+-    blob.uri = `https://${ref}--${repo}--${owner}.aem.page/media_${hash}.${ext}${fragment}`;
++    blob.uri = 'https://' + ref + '--' + repo + '--' + owner + '.' + (process.env.HLX_PROD_SERVER_HOST_PAGE || 'aem.page') + '/media_' + hash + '.' + ext + fragment;
+     return blob;
+   }
+ 

@@ -35,6 +35,12 @@ const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
 
 const DEFAULT_MAX_HTML_SIZE = 1024 * 1024; // 1mb
 
+// Bucket name constants (needed for build validation pattern checks)
+// eslint-disable-next-line prefer-destructuring
+const HELIX_BUCKET_SUFFIX = process.env.HELIX_BUCKET_SUFFIX;
+export const DEFAULT_CONTENT_BUS_BUCKET = `helix-content-bus-${HELIX_BUCKET_SUFFIX}`;
+export const DEFAULT_MEDIA_BUS_BUCKET = `helix-media-bus-${HELIX_BUCKET_SUFFIX}`;
+
 /**
  * Generates an error response
  * @param {string} message - error message
