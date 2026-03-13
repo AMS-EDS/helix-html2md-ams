@@ -17,7 +17,7 @@ import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
 import { Nock, uncompress } from './utils.js';
-import { HELIX_BUCKET_SUFFIX } from './setup-env.js';
+import { HELIX_BUCKET_SUFFIX, HLX_PROD_SERVER_HOST_PAGE } from './setup-env.js';
 
 function reqUrl(path = '/', init = {}) {
   const url = new URL('https://localhost');
@@ -26,6 +26,15 @@ function reqUrl(path = '/', init = {}) {
   url.searchParams.append('sourceUrl', `https://www.example.com${path}`);
   url.searchParams.append('contentBusId', 'foo-id');
   return new Request(url.href, init);
+}
+
+/**
+ * Helper to load fixture and replace hardcoded domains with environment variables
+ */
+async function loadFixture(filename) {
+  const content = await readFile(resolve(__testdir, 'fixtures', filename), 'utf-8');
+  // Replace aem.page with the environment-specific domain
+  return content.replace(/aem\.page/g, HLX_PROD_SERVER_HOST_PAGE);
 }
 
 const DUMMY_ENV = {
@@ -38,6 +47,7 @@ const DUMMY_ENV = {
   CLOUDFLARE_R2_ACCESS_KEY_ID: 'dummy',
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'dummy',
   HELIX_MEDIA_HANDLER_DISABLE_R2: 'true',
+  HLX_PROD_SERVER_HOST_PAGE,
 };
 
 describe('Index Tests', () => {
@@ -130,7 +140,7 @@ describe('Index Tests', () => {
           .times(5)
           .reply(201);
 
-        const expected = await readFile(resolve(__testdir, 'fixtures', 'images.md'), 'utf-8');
+        const expected = await loadFixture('images.md');
         const result = await main(reqUrl('/blog/article', { headers }), { log: console, env: DUMMY_ENV });
         assert.strictEqual(result.status, 200);
 
@@ -139,7 +149,7 @@ describe('Index Tests', () => {
         assert.deepStrictEqual(result.headers.plain(), {
           'cache-control': 'no-store, private, must-revalidate',
           'content-encoding': 'gzip',
-          'content-length': '837',
+          'content-length': '845',
           'content-type': 'text/markdown; charset=utf-8',
           'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
           'x-source-location': 'https://www.example.com/blog/article',
@@ -199,7 +209,7 @@ describe('Index Tests', () => {
           .times(5)
           .reply(201);
 
-        const expected = await readFile(resolve(__testdir, 'fixtures', 'images.md'), 'utf-8');
+        const expected = await loadFixture('images.md');
         const result = await main(reqUrl('/blog/article', { headers }), { log: console, env: DUMMY_ENV });
         assert.strictEqual(result.status, 200);
 
@@ -208,7 +218,7 @@ describe('Index Tests', () => {
         assert.deepStrictEqual(result.headers.plain(), {
           'cache-control': 'no-store, private, must-revalidate',
           'content-encoding': 'gzip',
-          'content-length': '837',
+          'content-length': '845',
           'content-type': 'text/markdown; charset=utf-8',
           'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
           'x-source-location': 'https://www.example.com/blog/article',
@@ -431,7 +441,7 @@ describe('Index Tests', () => {
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '2870',
+      'content-length': '2874',
       'content-type': 'text/markdown; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
@@ -566,14 +576,14 @@ describe('Index Tests', () => {
         env: DUMMY_ENV,
       },
     );
-    const expected = await readFile(resolve(__testdir, 'fixtures', 'image-large.md'), 'utf-8');
+    const expected = await loadFixture('image-large.md');
     const uncompressed = await uncompress(result);
     assert.strictEqual(result.status, 200);
     assert.strictEqual(uncompressed, expected.trim());
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '345',
+      'content-length': '349',
       'content-type': 'text/markdown; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });

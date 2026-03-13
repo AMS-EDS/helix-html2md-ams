@@ -31,9 +31,6 @@ export const {
 export const HELIX_BUCKET_SUFFIX = process.env.HELIX_BUCKET_SUFFIX;
 process.env.HELIX_BUCKET_SUFFIX = HELIX_BUCKET_SUFFIX;
 
-// Override HLX_PROD_SERVER_HOST_PAGE for tests to use aem.page instead of gov-aem.page
-process.env.HLX_PROD_SERVER_HOST_PAGE = 'aem.page';
-
 // Calculate bucket names from suffix, then set them in process.env
 // This makes them available to both test code (via exports) and app code (via process.env)
 export const CONTENT_BUS_BUCKET = `helix-content-bus-${HELIX_BUCKET_SUFFIX}`;
