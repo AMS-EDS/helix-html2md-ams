@@ -18,31 +18,27 @@ dotenv.config();
 
 /// Define the variables
 // export const { HELIX_BUCKET_NAMES } = process.env;
-// eslint-disable-next-line no-unused-vars
-export const {
-  AWS_ACCOUNT_ID,
-  AWS_REGION,
-  HLX_PROD_SERVER_HOST_PAGE,
-  HLX_PROD_SERVER_HOST_LIVE,
-  HLX_PROD_SERVER_HOST_REVIEW,
-} = process.env;
+export const AWS_ACCOUNT_ID = process.env.AWS_ACCOUNT_ID || 'BAD_VAR_html2md_AWS_ACCOUNT_ID';
+export const AWS_REGION = process.env.AWS_REGION || 'BAD_VAR_html2md_AWS_REGION';
+export const HLX_PROD_SERVER_HOST_PAGE = process.env.HLX_PROD_SERVER_HOST_PAGE || 'BAD_VAR_html2md_HLX_PROD_SERVER_HOST_PAGE';
+export const HLX_PROD_SERVER_HOST_LIVE = process.env.HLX_PROD_SERVER_HOST_LIVE || 'BAD_VAR_html2md_HLX_PROD_SERVER_HOST_LIVE';
+export const HLX_PROD_SERVER_HOST_REVIEW = process.env.HLX_PROD_SERVER_HOST_REVIEW || 'BAD_VAR_html2md_HLX_PROD_SERVER_HOST_REVIEW';
 
-// eslint-disable-next-line prefer-destructuring
-export const HELIX_BUCKET_SUFFIX = process.env.HELIX_BUCKET_SUFFIX;
+export const HELIX_BUCKET_SUFFIX = process.env.HELIX_BUCKET_SUFFIX || 'BAD_VAR_html2md_HELIX_BUCKET_SUFFIX';
 process.env.HELIX_BUCKET_SUFFIX = HELIX_BUCKET_SUFFIX;
 
 // Calculate bucket names from suffix, then set them in process.env
 // This makes them available to both test code (via exports) and app code (via process.env)
-export const CONTENT_BUS_BUCKET = `helix-content-bus-${HELIX_BUCKET_SUFFIX}`;
+export const CONTENT_BUS_BUCKET = `helix-content-bus-${HELIX_BUCKET_SUFFIX}` || 'BAD_VAR_html2md_CONTENT_BUS_BUCKET';
 process.env.CONTENT_BUS_BUCKET = CONTENT_BUS_BUCKET;
 
-export const CODE_BUS_BUCKET = `helix-code-bus-${HELIX_BUCKET_SUFFIX}`;
+export const CODE_BUS_BUCKET = `helix-code-bus-${HELIX_BUCKET_SUFFIX}` || 'BAD_VAR_html2md_CODE_BUS_BUCKET';
 process.env.CODE_BUS_BUCKET = CODE_BUS_BUCKET;
 
-export const MEDIA_BUS_BUCKET = `helix-media-bus-${HELIX_BUCKET_SUFFIX}`;
+export const MEDIA_BUS_BUCKET = `helix-media-bus-${HELIX_BUCKET_SUFFIX}` || 'BAD_VAR_html2md_MEDIA_BUS_BUCKET';
 process.env.MEDIA_BUS_BUCKET = MEDIA_BUS_BUCKET;
 
-export const CONFIG_BUS_BUCKET = `helix-config-bus-${HELIX_BUCKET_SUFFIX}`;
+export const CONFIG_BUS_BUCKET = `helix-config-bus-${HELIX_BUCKET_SUFFIX}` || 'BAD_VAR_html2md_CONFIG_BUS_BUCKET';
 process.env.CONFIG_BUS_BUCKET = CONFIG_BUS_BUCKET;
 
 // eslint-disable-next-line no-console
