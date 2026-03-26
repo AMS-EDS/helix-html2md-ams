@@ -6,3 +6,4 @@ dist
 tmp
 .idea/
 .vscode/
+.editorconfig
